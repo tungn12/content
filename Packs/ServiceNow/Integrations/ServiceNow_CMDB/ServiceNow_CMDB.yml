@@ -83,8 +83,9 @@ script:
       name: fields
       required: false
       secret: false
-    - default: false
-      description: 'The maximum number of relations returned (default: 1000).'
+    - default: true
+      defaultValue: '50'
+      description: 'The maximum number of relations returned (default: 50).'
       isArray: false
       name: relation_limit
       required: false
@@ -124,16 +125,18 @@ script:
       name: class
       required: true
       secret: false
-    - default: false
-      description: The discovery source value.
+    - default: true
+      defaultValue: ServiceNow
+      description: The discovery source value. You can see all avaialable values from
+        sys_choice table with query GOTOelementLIKEdiscovery_source^name=cmdb_ci.
       isArray: false
       name: source
-      required: true
+      required: false
       secret: false
     - default: false
       description: 'The attributes that should be added to the created record. Input
-        format: a dictionary with attribute:value pairs. For example: "{''name'':''test'',
-        ''ram'':''1024''}"'
+        format: attribute=value pairs. Multiple attributes can be passed, separated with a comma, e.g.: "name=test,
+        ram=1024"'
       isArray: false
       name: attributes
       required: true
@@ -157,6 +160,20 @@ script:
         be passed, comma seperated.
       isArray: false
       name: fields
+      required: false
+      secret: false
+    - default: true
+      defaultValue: '50'
+      description: 'The maximum number of relations returned (default: 50).'
+      isArray: false
+      name: relation_limit
+      required: false
+      secret: false
+    - default: false
+      description: 'A number of records to exclude from the relations query (default:
+        0).'
+      isArray: false
+      name: relation_offset
       required: false
       secret: false
     deprecated: false
@@ -193,16 +210,17 @@ script:
       name: sys_id
       required: true
       secret: false
-    - default: false
-      description: The discovery source value.
+    - default: true
+      defaultValue: ServiceNow
+      description: The discovery source value. You can see all avaialable values from
+        sys_choice table with query GOTOelementLIKEdiscovery_source^name=cmdb_ci.
       isArray: false
       name: source
-      required: true
+      required: false
       secret: false
     - default: false
       description: 'The attributes that should be updated in the record. Input format:
-        a dictionary with attribute:value pairs. For example: "{''name'':''test'',
-        ''ram'':''1024''}"'
+       attribute=value pairs. Multiple attributes can be passed, separated with a comma, e.g.: "name=test,ram=1024"'
       isArray: false
       name: attributes
       required: true
@@ -212,6 +230,20 @@ script:
         be passed, comma seperated.
       isArray: false
       name: fields
+      required: false
+      secret: false
+    - default: true
+      defaultValue: '50'
+      description: 'The maximum number of relations returned (default: 50).'
+      isArray: false
+      name: relation_limit
+      required: false
+      secret: false
+    - default: false
+      description: 'A number of records to exclude from the relations query (default:
+        0).'
+      isArray: false
+      name: relation_offset
       required: false
       secret: false
     deprecated: false
@@ -247,11 +279,13 @@ script:
       name: sys_id
       required: true
       secret: false
-    - default: false
-      description: The discovery source value.
+    - default: true
+      defaultValue: ServiceNow
+      description: The discovery source value. You can see all avaialable values from
+        sys_choice table with query GOTOelementLIKEdiscovery_source^name=cmdb_ci.
       isArray: false
       name: source
-      required: true
+      required: false
       secret: false
     - default: false
       description: A list of dictionaries. Each dictionary represents an inbound relation
@@ -272,6 +306,20 @@ script:
         comma seperated.
       isArray: false
       name: fields
+      required: false
+      secret: false
+    - default: true
+      defaultValue: '50'
+      description: 'The maximum number of relations returned (default: 50).'
+      isArray: false
+      name: relation_limit
+      required: false
+      secret: false
+    - default: false
+      description: 'A number of records to exclude from the relations query (default:
+        0).'
+      isArray: false
+      name: relation_offset
       required: false
       secret: false
     deprecated: false
@@ -311,7 +359,7 @@ script:
     - default: false
       description: The ID of the relation that should be deleted.
       isArray: false
-      name: rel_sys_id
+      name: relation_sys_id
       required: true
       secret: false
     - default: false
@@ -319,6 +367,20 @@ script:
         comma seperated.
       isArray: false
       name: fields
+      required: false
+      secret: false
+    - default: true
+      defaultValue: '50'
+      description: 'The maximum number of relations returned (default: 50).'
+      isArray: false
+      name: relation_limit
+      required: false
+      secret: false
+    - default: false
+      description: 'A number of records to exclude from the relations query (default:
+        0).'
+      isArray: false
+      name: relation_offset
       required: false
       secret: false
     deprecated: false

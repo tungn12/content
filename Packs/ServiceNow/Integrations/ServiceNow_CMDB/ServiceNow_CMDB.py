@@ -10,6 +10,7 @@ import traceback
 from typing import Any, Dict, Tuple, List, Optional, Union, cast
 from _collections import defaultdict
 import ast
+from operator import itemgetter
 
 
 # Disable insecure warnings
@@ -26,11 +27,15 @@ SYSPARMS = {
     'relation_offset': 'sysparm_relation_offset'
 }
 RECORDS_LIST_PARAMS = ['query', 'limit', 'offset']
-GET_RECORD_PARAMS = ['fields', 'relation_limit', 'relation_offset']
-SINGLE_RECORD_PARAMS = ['fields']
+RECORD_PARAMS = ['fields', 'relation_limit', 'relation_offset']
 CREAT_RECORD_DATA_FIELDS = ['attributes', 'inbound_relations', 'outbound_relations', 'source']
 UPDATE_RECORD_DATA_FIELDS = ['attributes', 'source']
 ADD_RELATION_DATA_FIELDS = ['inbound_relations', 'outbound_relations', 'source']
+RESULT_FIELDS = ['attributes', 'inbound_relations', 'outbound_relations']
+FIELD_TO_OUTPUT = {
+    'inbound_relations': 'Inbound Relations',
+    'outbound_relations': 'Outbound Relations'
+}
 
 
 class Client(BaseClient):
@@ -103,12 +108,19 @@ def handle_sysparms(sys_parms: List, args: dict) -> dict:
         val = args.get(parm)
         if val:
             params[SYSPARMS.get(parm)] = val
+
+    # If the user defined the fields param, verify that sys_id and name were added so they can be shown in the output
+    if params.get('sysparm_fields'):
+        if 'sys_id' not in params.get('sysparm_fields'):
+            params['sysparm_fields'] += ',sys_id'
+        if 'name' not in params.get('sysparm_fields'):
+            params['sysparm_fields'] += ',name'
     return params
 
 
 def create_request_data(data_fields: List, args: dict) -> dict:
     """
-    This function converts the fields given by the user when creating a new record to a data dict that should be passed
+    This function converts the input given by the user when creating a new record to a data dict that should be passed
     in the http request.
 
     Args:
@@ -122,6 +134,19 @@ def create_request_data(data_fields: List, args: dict) -> dict:
     for field in data_fields:
         if field == 'source':
             data[field] = args.get(field)
+        elif field == 'attributes':  # 'attributes' input should be of the form key1=value1,key2=value2...
+            val = args.get(field)
+            if val:
+                try:
+                    attributes_dict = {}
+                    attributes_input = val.split(',')
+                    for attribute in attributes_input:
+                        pair = attribute.split('=')
+                        attributes_dict[pair[0]] = pair[1]
+                    data[field] = attributes_dict
+                except Exception:
+                    raise Exception('Illegal input. Input format should be "key=value". Multiple values can be filled, '
+                                    'separated by a comma.')
         else:  # other fields should be converted to dict/list
             val = args.get(field)
             if val:
@@ -156,6 +181,39 @@ def create_record_context(class_name: str, sys_id: str, result: dict) -> dict:
     return context
 
 
+def create_human_readable(title: str, result: dict) -> str:
+    """
+    Create the human readable output for commands.
+
+    Args:
+        title: The title of the human readable output.
+        result: The raw response from the http request consisting of the attributes, inbound_relations and
+                outbound_relations fields.
+
+    Return:
+        A string representing the markdown output that should be displayed in the war room.
+    """
+    md = f'{title}\n'
+    attributes_outputs = {
+        'SysID': result.get('attributes').get('sys_id'),
+        'Name': result.get('attributes').get('name')
+    }
+    md += tableToMarkdown('Attributes', t=attributes_outputs, removeNull=True)
+
+    for relation_type in ['inbound_relations', 'outbound_relations']:
+        relations = result.get(relation_type)
+        if relations:
+            relation_output = {
+                'SysID': list(map(itemgetter('sys_id'), relations)),
+                'Target Display Value': list(
+                    map(itemgetter('display_value'), list(map(itemgetter('target'), result.get(relation_type))))),
+                'Type Display Value': list(
+                    map(itemgetter('display_value'), list(map(itemgetter('type'), result.get(relation_type))))),
+            }
+            md += f' {tableToMarkdown(FIELD_TO_OUTPUT.get(relation_type), t=relation_output)}'
+    return md
+
+
 ''' COMMAND FUNCTIONS '''
 
 
@@ -179,7 +237,7 @@ def records_list_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
     }
 
     response = client.records_list(class_name=class_name, params=params)
-    result = response.get('result', [])
+    result = response.get('result', {})
     if result:
         outputs['Records'] = result
         human_readable = tableToMarkdown(f'Found {len(result)} records for class {class_name}:', t=result)
@@ -204,7 +262,7 @@ def get_record_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
     context: dict = defaultdict(list)
     class_name = args.get('class')
     sys_id = args.get('sys_id')
-    params = handle_sysparms(GET_RECORD_PARAMS, args)
+    params = handle_sysparms(RECORD_PARAMS, args)
 
     response = client.get_record(class_name=class_name, sys_id=sys_id, params=params)
     result = response.get('result')
@@ -216,7 +274,8 @@ def get_record_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
             'InboundRelations': result.get('inbound_relations', []),
             'OutboundRelations': result.get('outbound_relations', []),
         }
-        human_readable = tableToMarkdown(f'Found the following attributes and relations for record {sys_id}:', t=result)
+        hr_title = f'### Found the following attributes and relations for record {sys_id}:'
+        human_readable = create_human_readable(hr_title, result)
     else:
         context['ServiceNowCMDB.Record(val.ID===obj.ID)'] = {
             'Class': class_name,
@@ -240,20 +299,18 @@ def create_record_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
     """
     context: dict = defaultdict(list)
     class_name = args.get('class')
-    params = handle_sysparms(SINGLE_RECORD_PARAMS, args)
-
-    # If the user defined fields, verify that sys_id is in these fields, otherwise the sys_id won't be returned
-    if params.get('sysparm_fields') and 'sys_id' not in params.get('sysparm_fields'):
-        params['sysparm_fields'] += ',sys_id'
+    params = handle_sysparms(RECORD_PARAMS, args)
 
     data = create_request_data(CREAT_RECORD_DATA_FIELDS, args)
+    print(data)
 
     response = client.create_record(class_name=class_name, params=params, data=str(data))
     result = response.get('result')
     if result:
         sys_id = result.get('attributes', {}).get('sys_id')
         context = create_record_context(class_name, sys_id, result)
-        human_readable = tableToMarkdown(f'Record {sys_id} was created successfully.', t=result)
+        hr_title = f'### Record {sys_id} was created successfully.'
+        human_readable = create_human_readable(hr_title, result)
     else:
         human_readable = 'Failed to create a new record.'
 
@@ -275,7 +332,7 @@ def update_record_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
     class_name = args.get('class')
     sys_id = args.get('sys_id')
 
-    params = handle_sysparms(SINGLE_RECORD_PARAMS, args)
+    params = handle_sysparms(RECORD_PARAMS, args)
 
     data = create_request_data(UPDATE_RECORD_DATA_FIELDS, args)
 
@@ -283,7 +340,8 @@ def update_record_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
     result = response.get('result')
     if result:
         context = create_record_context(class_name, sys_id, result)
-        human_readable = tableToMarkdown(f'Updated record {sys_id} successfully.', t=result)
+        hr_title = f'### Updated record {sys_id} successfully.'
+        human_readable = create_human_readable(hr_title, result)
     else:
         human_readable = f'Failed to update record {sys_id}.'
 
@@ -305,7 +363,7 @@ def add_relation_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
     class_name = args.get('class')
     sys_id = args.get('sys_id')
 
-    params = handle_sysparms(SINGLE_RECORD_PARAMS, args)
+    params = handle_sysparms(RECORD_PARAMS, args)
 
     data = create_request_data(ADD_RELATION_DATA_FIELDS, args)
 
@@ -313,7 +371,8 @@ def add_relation_command(client: Client, args: dict) -> Tuple[str, dict, Any]:
     result = response.get('result')
     if result:
         context = create_record_context(class_name, sys_id, result)
-        human_readable = tableToMarkdown(f'New relations were added to {sys_id} record successfully.', t=result)
+        hr_title = f'### New relations were added to {sys_id} record successfully.'
+        human_readable = create_human_readable(hr_title, result)
     else:
         human_readable = f'Failed to add new relations to record {sys_id}.'
 
@@ -334,15 +393,16 @@ def delete_relation_command(client: Client, args: dict) -> Tuple[str, dict, Any]
     context: dict = defaultdict(list)
     class_name = args.get('class')
     sys_id = args.get('sys_id')
-    rel_sys_id = args.get('rel_sys_id')
+    rel_sys_id = args.get('relation_sys_id')
 
-    params = handle_sysparms(SINGLE_RECORD_PARAMS, args)
+    params = handle_sysparms(RECORD_PARAMS, args)
 
     response = client.delete_relation(class_name=class_name, sys_id=sys_id, rel_sys_id=rel_sys_id, params=params)
     result = response.get('result')
     if result:
         context = create_record_context(class_name, sys_id, result)
-        human_readable = tableToMarkdown(f'Deleted relation {rel_sys_id} successfully from {sys_id} record.', t=result)
+        hr_title = f'### Deleted relation {rel_sys_id} successfully from {sys_id} record.'
+        human_readable = create_human_readable(hr_title, result)
     else:
         human_readable = f'Failed to delete relation {rel_sys_id} from record {sys_id}.'
 
