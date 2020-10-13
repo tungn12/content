@@ -246,6 +246,7 @@ def install_packs(client, host, prints_manager, thread_index, packs_to_install, 
                                                                                 body=request_data,
                                                                                 accept='application/json',
                                                                                 _request_timeout=request_timeout)
+            print(f'TESTTTT {response_data}')
 
             if 200 <= status_code < 300:
                 message = 'Packs were successfully installed!\n'
