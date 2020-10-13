@@ -342,7 +342,7 @@ script:
     - contextPath: ServiceNowCMDB.Record.InboundRelations
       description: A list with all the inbound relations of the record.
       type: Unknown
-  dockerimage: demisto/python3:3.8.3.9324
+  dockerimage: demisto/python3:3.8.6.12176
   feed: false
   isfetch: false
   longRunning: false
