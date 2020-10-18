@@ -135,8 +135,8 @@ script:
       secret: false
     - default: false
       description: 'The attributes that should be added to the created record. Input
-        format: attribute=value pairs. Multiple attributes can be passed, separated with a comma, e.g.: "name=test,
-        ram=1024"'
+        format: attribute=value pairs. Multiple attributes can be passed, separated
+        with a comma, e.g.: "name=test, ram=1024"'
       isArray: false
       name: attributes
       required: true
@@ -177,7 +177,7 @@ script:
       required: false
       secret: false
     deprecated: false
-    description: Create a record with associated relations.
+    description: Create a record with associated relations and attributes.
     execution: false
     name: servicenow-cmdb-record-create
     outputs:
@@ -220,7 +220,8 @@ script:
       secret: false
     - default: false
       description: 'The attributes that should be updated in the record. Input format:
-       attribute=value pairs. Multiple attributes can be passed, separated with a comma, e.g.: "name=test,ram=1024"'
+        attribute=value pairs. Multiple attributes can be passed, separated with a
+        comma, e.g.: "name=test,ram=1024"'
       isArray: false
       name: attributes
       required: true
@@ -247,6 +248,7 @@ script:
       required: false
       secret: false
     deprecated: false
+    description: Update a record with the given attributes.
     execution: false
     name: servicenow-cmdb-record-update
     outputs:
