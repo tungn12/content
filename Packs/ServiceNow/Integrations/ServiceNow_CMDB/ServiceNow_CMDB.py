@@ -12,7 +12,6 @@ from _collections import defaultdict
 import ast
 from operator import itemgetter
 
-
 # Disable insecure warnings
 urllib3.disable_warnings()
 
@@ -38,7 +37,7 @@ FIELD_TO_OUTPUT = {
 }
 
 
-class Client(BaseClient):
+class Client:
     """Client class to interact with the service API
 
     This Client implements API calls, and does not contain any Demisto logic.
@@ -47,46 +46,53 @@ class Client(BaseClient):
     Most calls use _http_request() that handles proxy, SSL verification, etc.
     """
 
-    def __init__(self, base_url: str, username: str, password: str, verify: bool, proxy: bool):
-        headers = {
+    # def __init__(self, base_url: str, username: str, password: str, verify: bool, proxy: bool):
+    #     headers = {
+    #         'Content-Type': 'application/json',
+    #         'Accept': 'application/json'
+    #     }
+    #     super().__init__(base_url=base_url, verify=verify, proxy=proxy, headers=headers, auth=(username, password))
+
+    def __init__(self, params):
+        params['headers'] = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
-        super().__init__(base_url=base_url, verify=verify, proxy=proxy, headers=headers, auth=(username, password))
+        self._snow_client: ServiceNowClient = ServiceNowClient(params=params)
 
-    def http_request(self, method, url_suffix, params=None, data=None):
-        try:
-            res = self._http_request(method, url_suffix, resp_type='response', params=params, data=data)
-            if res.status_code in [200, 201]:  # todo: check if I should support error status codes
-                try:
-                    return res.json()
-                except ValueError as exception:
-                    raise DemistoException('Failed to parse json object from response: {}'
-                                           .format(res.content), exception)
-        except Exception as e:
-            raise e  # todo: check if to add an error message
+    # def http_request(self, method, url_suffix, params=None, data=None):
+    #     try:
+    #         res = self._http_request(method, url_suffix, resp_type='response', params=params, data=data)
+    #         if res.status_code in [200, 201]:  # todo: check if I should support error status codes
+    #             try:
+    #                 return res.json()
+    #             except ValueError as exception:
+    #                 raise DemistoException('Failed to parse json object from response: {}'
+    #                                        .format(res.content), exception)
+    #     except Exception as e:
+    #         raise e  # todo: check if to add an error message
 
     def records_list(self, class_name, params=None):
-        return self.http_request(method='GET', url_suffix=class_name, params=params)
+        return self._snow_client.http_request(method='GET', url_suffix=class_name, params=params)
 
     def get_record(self, class_name, sys_id, params=None):
         url_suffix = f'{class_name}/{sys_id}'
-        return self.http_request(method='GET', url_suffix=url_suffix, params=params)
+        return self._snow_client.http_request(method='GET', url_suffix=url_suffix, params=params)
 
     def create_record(self, class_name, data, params=None):
-        return self.http_request(method='POST', url_suffix=class_name, params=params, data=data)
+        return self._snow_client.http_request(method='POST', url_suffix=class_name, params=params, data=data)
 
     def update_record(self, class_name, sys_id, data, params=None):
         url_suffix = f'{class_name}/{sys_id}'
-        return self.http_request(method='PATCH', url_suffix=url_suffix, params=params, data=data)
+        return self._snow_client.http_request(method='PATCH', url_suffix=url_suffix, params=params, data=data)
 
     def add_relation(self, class_name, sys_id, data, params=None):
         url_suffix = f'{class_name}/{sys_id}/relation'
-        return self.http_request(method='POST', url_suffix=url_suffix, params=params, data=data)
+        return self._snow_client.http_request(method='POST', url_suffix=url_suffix, params=params, data=data)
 
     def delete_relation(self, class_name, sys_id, rel_sys_id, params=None):
         url_suffix = f'{class_name}/{sys_id}/relation/{rel_sys_id}'
-        return self.http_request(method='DELETE', url_suffix=url_suffix, params=params)
+        return self._snow_client.http_request(method='DELETE', url_suffix=url_suffix, params=params)
 
 
 ''' HELPER FUNCTIONS '''
@@ -449,18 +455,8 @@ def main() -> None:
     """main function, parses params and runs command functions
     """
     params = demisto.params()
-    base_url = urljoin(params.get('url'), API_VERSION)
-    username = params.get('credentials', {}).get('identifier')
-    password = params.get('credentials', {}).get('password')
-    verify_certificate = not params.get('insecure', False)
-    proxy = params.get('proxy', False)
-
-    client = Client(
-        base_url=base_url,
-        username=username,
-        password=password,
-        verify=verify_certificate,
-        proxy=proxy)
+    params['url'] = urljoin(params.get('url'), API_VERSION)
+    client = Client(params=params)
 
     commands = {
         'servicenow-cmdb-records-list': records_list_command,
@@ -488,6 +484,9 @@ def main() -> None:
         demisto.error(traceback.format_exc())  # print the traceback
         return_error(f'Failed to execute {command} command.\nError:\n{str(e)}')
 
+
+# from Packs.ApiModules.Scripts.ServiceNowApiModule.ServiceNowApiModule import ServiceNowClient  # noqa: E402
+from ServiceNowApiModule import *
 
 ''' ENTRY POINT '''
 if __name__ in ('__main__', '__builtin__', 'builtins'):
