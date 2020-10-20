@@ -17,13 +17,13 @@ configuration:
   hidden: false
   name: client_id
   required: false
-  type: 0
+  type: 4
 - additionalinfo: If using OAuth, the client secret of the application that was created.
   display: Client Secret
   hidden: false
   name: client_secret
   required: false
-  type: 0
+  type: 4
 - display: Trust any certificate (not secure)
   name: insecure
   required: false

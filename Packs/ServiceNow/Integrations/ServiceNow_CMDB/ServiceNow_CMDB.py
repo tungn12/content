@@ -45,32 +45,12 @@ class Client:
     It inherits from BaseClient defined in CommonServer Python.
     Most calls use _http_request() that handles proxy, SSL verification, etc.
     """
-
-    # def __init__(self, base_url: str, username: str, password: str, verify: bool, proxy: bool):
-    #     headers = {
-    #         'Content-Type': 'application/json',
-    #         'Accept': 'application/json'
-    #     }
-    #     super().__init__(base_url=base_url, verify=verify, proxy=proxy, headers=headers, auth=(username, password))
-
     def __init__(self, params):
         params['headers'] = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
         self._snow_client: ServiceNowClient = ServiceNowClient(params=params)
-
-    # def http_request(self, method, url_suffix, params=None, data=None):
-    #     try:
-    #         res = self._http_request(method, url_suffix, resp_type='response', params=params, data=data)
-    #         if res.status_code in [200, 201]:  # todo: check if I should support error status codes
-    #             try:
-    #                 return res.json()
-    #             except ValueError as exception:
-    #                 raise DemistoException('Failed to parse json object from response: {}'
-    #                                        .format(res.content), exception)
-    #     except Exception as e:
-    #         raise e  # todo: check if to add an error message
 
     def records_list(self, class_name, params=None):
         return self._snow_client.http_request(method='GET', url_suffix=class_name, params=params)
