@@ -849,10 +849,10 @@ def execute_testing(tests_settings, server_ip, mockable_tests_names, unmockable_
     turn_off_telemetry(xsoar_client)
 
     proxy = None
-    if is_ami:
-        ami = AMIConnection(server_ip)
-        ami.clone_mock_data()
-        proxy = MITMProxy(server_ip)
+    # if is_ami:
+    #     ami = AMIConnection(server_ip)
+    #     ami.clone_mock_data()
+    #     proxy = MITMProxy(server_ip)
 
     failed_playbooks = []
     succeed_playbooks = []
@@ -862,7 +862,7 @@ def execute_testing(tests_settings, server_ip, mockable_tests_names, unmockable_
 
     disable_all_integrations(xsoar_client, prints_manager, thread_index=thread_index)
     prints_manager.execute_thread_prints(thread_index)
-    mockable_tests = get_test_records_of_given_test_names(tests_settings, mockable_tests_names)
+    # mockable_tests = get_test_records_of_given_test_names(tests_settings, mockable_tests_names)
     unmockable_tests = get_test_records_of_given_test_names(tests_settings, unmockable_tests_names)
 
     if is_nightly and is_memory_check:
@@ -873,31 +873,31 @@ def execute_testing(tests_settings, server_ip, mockable_tests_names, unmockable_
 
     try:
         # first run the mock tests to avoid mockless side effects in container
-        if is_ami and mockable_tests:
-            proxy.configure_proxy_in_demisto(proxy=proxy.ami.docker_ip + ':' + proxy.PROXY_PORT,
-                                             username=demisto_user, password=demisto_pass,
-                                             server=server)
-            executed_in_current_round, mockable_tests_queue = initialize_queue_and_executed_tests_set(mockable_tests)
-            while not mockable_tests_queue.empty():
-                t = mockable_tests_queue.get()
-                executed_in_current_round = update_round_set_and_sleep_if_round_completed(executed_in_current_round,
-                                                                                          prints_manager,
-                                                                                          t,
-                                                                                          thread_index,
-                                                                                          mockable_tests_queue)
-                run_test_scenario(mockable_tests_queue, tests_settings, t, proxy, default_test_timeout, skipped_tests_conf,
-                                  nightly_integrations, skipped_integrations_conf, skipped_integration, is_nightly,
-                                  run_all_tests, is_filter_configured, filtered_tests,
-                                  skipped_tests, secret_params, failed_playbooks, playbook_skipped_integration,
-                                  unmockable_integrations, succeed_playbooks, slack, circle_ci, build_number, server,
-                                  build_name, server_numeric_version, demisto_user, demisto_pass,
-                                  demisto_api_key, prints_manager, thread_index=thread_index)
-            proxy.configure_proxy_in_demisto(username=demisto_user, password=demisto_pass, server=server)
-
-            # reset containers after clearing the proxy server configuration
-            reset_containers(server, demisto_user, demisto_pass, prints_manager, thread_index)
-
-        prints_manager.add_print_job("\nRunning mock-disabled tests", print, thread_index)
+        # if is_ami and mockable_tests:
+        # #     proxy.configure_proxy_in_demisto(proxy=proxy.ami.docker_ip + ':' + proxy.PROXY_PORT,
+        # #                                      username=demisto_user, password=demisto_pass,
+        # #                                      server=server)
+        #     executed_in_current_round, mockable_tests_queue = initialize_queue_and_executed_tests_set(mockable_tests)
+        #     while not mockable_tests_queue.empty():
+        #         t = mockable_tests_queue.get()
+        #         executed_in_current_round = update_round_set_and_sleep_if_round_completed(executed_in_current_round,
+        #                                                                                   prints_manager,
+        #                                                                                   t,
+        #                                                                                   thread_index,
+        #                                                                                   mockable_tests_queue)
+        #         run_test_scenario(mockable_tests_queue, tests_settings, t, proxy, default_test_timeout, skipped_tests_conf,
+        #                           nightly_integrations, skipped_integrations_conf, skipped_integration, is_nightly,
+        #                           run_all_tests, is_filter_configured, filtered_tests,
+        #                           skipped_tests, secret_params, failed_playbooks, playbook_skipped_integration,
+        #                           unmockable_integrations, succeed_playbooks, slack, circle_ci, build_number, server,
+        #                           build_name, server_numeric_version, demisto_user, demisto_pass,
+        #                           demisto_api_key, prints_manager, thread_index=thread_index)
+        #     # proxy.configure_proxy_in_demisto(username=demisto_user, password=demisto_pass, server=server)
+        #
+        #     # reset containers after clearing the proxy server configuration
+        #     reset_containers(server, demisto_user, demisto_pass, prints_manager, thread_index)
+        #
+        # prints_manager.add_print_job("\nRunning mock-disabled tests", print, thread_index)
         executed_in_current_round, unmockable_tests_queue = initialize_queue_and_executed_tests_set(unmockable_tests)
         while not unmockable_tests_queue.empty():
             t = unmockable_tests_queue.get()
@@ -929,21 +929,21 @@ def execute_testing(tests_settings, server_ip, mockable_tests_names, unmockable_
         tests_data_keeper.add_tests_data(succeed_playbooks, failed_playbooks, skipped_tests,
                                          skipped_integration, unmockable_integrations)
         if is_ami:
-            tests_data_keeper.add_proxy_related_test_data(proxy)
+            # tests_data_keeper.add_proxy_related_test_data(proxy)
 
             if build_name == 'master':
                 updating_mocks_msg = "Pushing new/updated mock files to mock git repo."
                 prints_manager.add_print_job(updating_mocks_msg, print, thread_index)
-                ami.upload_mock_files(build_name, build_number)
+                # ami.upload_mock_files(build_name, build_number)
 
         if playbook_skipped_integration and build_name == 'master':
             comment = 'The following integrations are skipped and critical for the test:\n {}'. \
                 format('\n- '.join(playbook_skipped_integration))
             add_pr_comment(comment)
         # Sending proxy metrics to GCP
-        try:
-            storage_client = storage.Client()
-            now = datetime.datetime.now().replace(microsecond=0).isoformat()
+        # try:
+        #     storage_client = storage.Client()
+        #     now = datetime.datetime.now().replace(microsecond=0).isoformat()
             # each log line will be comprised of the following metrics:
             # - Date
             # - Count of successful tests
@@ -952,24 +952,24 @@ def execute_testing(tests_settings, server_ip, mockable_tests_names, unmockable_
             # - Count of failed rerecords
             # - IDs of the playbooks that were rerecorded successfully
             # - Ids of the playbooks that have failed rerecording
-            new_proxy_line = f'{now},' \
-                             f'{proxy.successful_tests_count},' \
-                             f'{proxy.failed_tests_count},' \
-                             f'{proxy.successful_rerecord_count},' \
-                             f'{proxy.failed_rerecord_count},' \
-                             f'{";".join(proxy.rerecorded_tests)},' \
-                             f'{";".join(proxy.failed_rerecord_tests)}\n'
-            bucket = storage_client.bucket(BUCKET_NAME)
+            # new_proxy_line = f'{now},' \
+            #                  f'{proxy.successful_tests_count},' \
+            #                  f'{proxy.failed_tests_count},' \
+            #                  f'{proxy.successful_rerecord_count},' \
+            #                  f'{proxy.failed_rerecord_count},' \
+            #                  f'{";".join(proxy.rerecorded_tests)},' \
+            #                  f'{";".join(proxy.failed_rerecord_tests)}\n'
+            # bucket = storage_client.bucket(BUCKET_NAME)
             # Google storage objects are immutable and there is no way to append to them.
             # The workaround is to create a new temp file and then compose the log file with the new created file
             # see here for more info https://cloud.google.com/storage/docs/json_api/v1/objects/compose
-            new_file_blob = bucket.blob(f'{LOCKS_PATH}/{WORKFLOW_ID}.txt')
-            new_file_blob.upload_from_string(new_proxy_line)
-            current_file_blob = bucket.blob(f'{LOCKS_PATH}/{PROXY_LOG_FILE_NAME}')
-            current_file_blob.compose([current_file_blob, new_file_blob])
-            new_file_blob.delete()
-        except Exception:
-            prints_manager.add_print_job("Failed to save proxy metrics", print, thread_index)
+        #     new_file_blob = bucket.blob(f'{LOCKS_PATH}/{WORKFLOW_ID}.txt')
+        #     new_file_blob.upload_from_string(new_proxy_line)
+        #     current_file_blob = bucket.blob(f'{LOCKS_PATH}/{PROXY_LOG_FILE_NAME}')
+        #     current_file_blob.compose([current_file_blob, new_file_blob])
+        #     new_file_blob.delete()
+        # except Exception:
+        #     prints_manager.add_print_job("Failed to save proxy metrics", print, thread_index)
 
 
 def update_round_set_and_sleep_if_round_completed(executed_in_current_round: set,

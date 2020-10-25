@@ -39,12 +39,13 @@ DOCKER_HARDENING_CONFIGURATION = {
     'docker.cpu.limit': '1.0',
     'docker.run.internal.asuser': 'true',
     'limit.docker.cpu': 'true',
-    'python.pass.extra.keys': '--memory=1g##--memory-swap=-1##--pids-limit=256##--ulimit=nofile=1024:8192'
+    # 'python.pass.extra.keys': '--memory=1g##--memory-swap=-1##--pids-limit=256##--ulimit=nofile=1024:8192'
 }
 MARKET_PLACE_CONFIGURATION = {
     'content.pack.verify': 'false',
     'marketplace.initial.sync.delay': '0',
-    'content.pack.ignore.missing.warnings.contentpack': 'true'
+    'content.pack.ignore.missing.warnings.contentpack': 'true',
+    'container.engine.type': 'podman'
 }
 
 
@@ -844,7 +845,7 @@ def set_docker_hardening_for_build(client, prints_manager):
         'docker.cpu.limit': '1.0',
         'docker.run.internal.asuser': 'true',
         'limit.docker.cpu': 'true',
-        'python.pass.extra.keys': '--memory=1g##--memory-swap=-1##--pids-limit=256##--ulimit=nofile=1024:8192'
+        # 'python.pass.extra.keys': '--memory=1g##--memory-swap=-1##--pids-limit=256##--ulimit=nofile=1024:8192'
     }
     error_msg = "Failed to set docker hardening server config - with status code "
 
